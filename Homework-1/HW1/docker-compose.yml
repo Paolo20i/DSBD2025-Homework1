@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # 1. Database MySQL (condiviso ma con 2 schemi separati)
+  db:
+    image: mysql:8.0
+    container_name: dsbd_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      # MYSQL_DATABASE: dsbd_main_db  <-- RIMOSSO (lo gestisce init.sql)
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # AGGIUNTO: Monta lo script di inizializzazione
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - dsbd_network
+
+  # 2. User Manager Microservice
+  user-manager:
+    build: ./user_manager
+    container_name: user_manager
+    ports:
+      - "5000:5000"
+      - "50051:50051"
+    depends_on:
+      - db
+    networks:
+      - dsbd_network
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=app_user
+      - DB_PASSWORD=app_password
+      - DB_NAME=user_db  # <-- CAMBIATO: Punta al suo DB dedicato
+
+  # 3. Data Collector Microservice
+  data-collector:
+    build: ./data_collector
+    container_name: data_collector
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+      - user-manager
+    networks:
+      - dsbd_network
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=app_user
+      - DB_PASSWORD=app_password
+      - DB_NAME=data_db  # <-- CAMBIATO: Punta al suo DB dedicato
+      - USER_MANAGER_HOST=user-manager
+      - OPENSKY_CLIENT_ID=provatest1-api-client
+      - OPENSKY_CLIENT_SECRET=yIVXsJpVWgatYLBKq1MYlpHWAdx4BdJU
+
+volumes:
+  mysql_data:
+
+networks:
+  dsbd_network:
+    driver: bridge
