@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package user;
+
+// Il servizio che lo User Manager deve implementare
+service UserService {
+  // Funzione chiamata dal Data Collector
+  rpc CheckUserExists (UserRequest) returns (UserResponse);
+}
+
+// Il messaggio di richiesta (Input)
+message UserRequest {
+  string email = 1;
+}
+
+// Il messaggio di risposta (Output)
+message UserResponse {
+  bool exists = 1;
+}
