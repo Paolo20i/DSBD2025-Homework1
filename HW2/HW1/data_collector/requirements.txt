@@ -1,8 +1,0 @@
-flask
-mysql-connector-python
-grpcio
-grpcio-tools
-protobuf
-requests
-kafka-python   # NUOVO: Per il Message Broker
-pybreaker      # NUOVO: Per il Circuit Breaker
