@@ -1,0 +1,7 @@
+flask
+mysql-connector-python
+grpcio
+grpcio-tools
+protobuf
+requests
+prometheus-client
