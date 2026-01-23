@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        server {
+            listen 80;
+
+            # User Manager
+            location /users {
+                proxy_pass http://user-manager-service:5000;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            # Data Collector
+            location /interests {
+                proxy_pass http://data-collector-service:5001;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location /flights {
+                proxy_pass http://data-collector-service:5001;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            location /analysis {
+                proxy_pass http://data-collector-service:5001;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            # --- NUOVO: SLA Manager ---
+            location /sla {
+                proxy_pass http://sla-manager-service:5000;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+            }
+        }
+    }

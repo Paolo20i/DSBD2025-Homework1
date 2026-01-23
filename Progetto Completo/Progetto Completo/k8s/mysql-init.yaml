@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-scripts
+data:
+  init.sql: |
+    -- Crea il database per User Manager
+    CREATE DATABASE IF NOT EXISTS user_db;
+    -- Crea il database per Data Collector
+    CREATE DATABASE IF NOT EXISTS data_db;
+    -- Assegna i permessi
+    CREATE USER IF NOT EXISTS 'app_user'@'%' IDENTIFIED BY 'app_password';
+    GRANT ALL PRIVILEGES ON user_db.* TO 'app_user'@'%';
+    GRANT ALL PRIVILEGES ON data_db.* TO 'app_user'@'%';
+    FLUSH PRIVILEGES; 

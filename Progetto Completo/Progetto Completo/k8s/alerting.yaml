@@ -1,0 +1,98 @@
+# --- Alert System ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-system
+  template:
+    metadata:
+      labels:
+        app: alert-system
+    spec:
+      containers:
+        - name: alert-system
+          image: alert-system:v1
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_PORT
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_USER
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_NAME_DATA
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dsbd-secrets
+                  key: app-db-password
+
+---
+# --- Alert Notifier ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-notifier
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-notifier
+  template:
+    metadata:
+      labels:
+        app: alert-notifier
+    spec:
+      containers:
+        - name: alert-notifier
+          image: alert-notifier:v1
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            # Configurazione SMTP 
+            - name: SMTP_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: SMTP_SERVER
+            - name: SMTP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: SMTP_PORT
+            - name: SMTP_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: SMTP_USER
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dsbd-secrets
+                  key: smtp-password

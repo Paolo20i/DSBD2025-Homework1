@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sla-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sla-manager
+  template:
+    metadata:
+      labels:
+        app: sla-manager
+    spec:
+      containers:
+        - name: sla-manager
+          image: sla-manager:v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PROMETHEUS_URL
+              value: "http://prometheus-service:9090"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-service:9092"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/sla_config.yaml
+              subPath: sla_config.yaml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: sla-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sla-manager-service
+spec:
+  selector:
+    app: sla-manager
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000

@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # --- DATABASE (Esistente) ---
+  db:
+    image: mysql:8.0
+    container_name: dsbd_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - dsbd_network
+
+  # --- USER MANAGER ---
+  user-manager:
+    build: ./user_manager
+    container_name: user_manager
+    ports:
+      - "5000:5000"
+      - "50051:50051"
+    depends_on:
+      - db
+    networks:
+      - dsbd_network
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=app_user
+      - DB_PASSWORD=app_password
+      - DB_NAME=user_db
+
+  # --- DATA COLLECTOR ---
+  data-collector:
+    build: ./data_collector
+    container_name: data_collector
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+      - user-manager
+      - kafka 
+    networks:
+      - dsbd_network
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=app_user
+      - DB_PASSWORD=app_password
+      - DB_NAME=data_db
+      - USER_MANAGER_HOST=user-manager
+      # Credenziali
+      - OPENSKY_CLIENT_ID=provatest1-api-client
+      - OPENSKY_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxx
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+  # --- KAFKA & ZOOKEEPER ---
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - dsbd_network
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    networks:
+      - dsbd_network
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "to-alert-system:1:1,to-notifier:1:1"
+
+  # --- ALERT SYSTEM ---
+  alert-system:
+    build: ./alert_system
+    container_name: alert_system
+    depends_on:
+      - kafka
+      - db
+    networks:
+      - dsbd_network
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=app_user
+      - DB_PASSWORD=app_password
+      - DB_NAME=data_db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+
+  # --- ALERT NOTIFIER ---
+  alert-notifier:
+    build: ./alert_notifier
+    container_name: alert_notifier
+    depends_on:
+      - kafka
+    networks:
+      - dsbd_network
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=admin@gmail.com
+      - SMTP_PASSWORD=xxxx xxxx xxxx xxxx
+  # --- NGINX ---
+  nginx:
+    image: nginx:latest
+    container_name: api_gateway
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - user-manager
+      - data-collector
+    networks:
+      - dsbd_network
+
+volumes:
+  mysql_data:
+
+networks:
+  dsbd_network:
+    driver: bridge

@@ -1,0 +1,12 @@
+metrics:
+  # Metrica 1: Performance del Data Collector
+  - name: "fetch_duration_sla"
+    query: "last_fetch_duration_seconds"
+    min: 0
+    max: 5.0
+    
+  # Metrica 2: Stato del Database Utenti
+  - name: "users_count_sla"
+    query: "users_registered_count"
+    min: 1
+    max: 1000

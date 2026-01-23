@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-collector
+  template:
+    metadata:
+      labels:
+        app: data-collector
+    spec:
+      containers:
+        - name: data-collector
+          image: data-collector:v1
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5001
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            # Config DB
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_PORT
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_USER
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: DB_NAME_DATA
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dsbd-secrets
+                  key: app-db-password
+            # Service Discovery
+            - name: USER_MANAGER_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: USER_MANAGER_HOST
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            # Secrets OpenSky
+            - name: OPENSKY_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: dsbd-config
+                  key: OPENSKY_CLIENT_ID
+            - name: OPENSKY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: dsbd-secrets
+                  key: opensky-client-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-collector-service
+spec:
+  selector:
+    app: data-collector
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
